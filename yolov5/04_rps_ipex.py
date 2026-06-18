@@ -1,16 +1,21 @@
-#!/usr/bin/env python
-# D021 YOLOv5 Rock Paper Scissors
-
 import torch
 import cv2
 import os
 import json
 import warnings
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=r".*torch\.cuda\.amp\.autocast.*",
+)
 
-# TODO: 커스텀 모델 로드
-model_path = os.path.abspath("noipex_rps.pt")
+# TODO: 커스텀 모델 로드 (ONNX)
 model = torch.hub.load("ultralytics/yolov5", "custom", path=model_path)
 
+# TODO: Label 로드
+label_path = os.path.abspath("rps_model.names.json")
+with open(label_path, "r") as f:
+     label_names = json.load(f)
 
 # Video capture
 cap = cv2.VideoCapture(0)
@@ -25,16 +30,30 @@ while True:
 
     # 추론 실행 (BGR -> RGB)
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # TODO: 추론 전 입력 크기 보정 (640x640)
+    # rgb_frame = cv2.resize(rgb_frame, (640, 640))
+
+
     results = model(rgb_frame)
 
-    # Bounding box 그리기
+    # TODO: 카메라 입력의 크기(frame_h, frame_w)와 모델의 입력 크기(input_h, input_w) 구하기
+    frame_h, frame_w = frame.shape[:2]
+    input_h, input_w = results.s[2:]
+
+
+    # Boudning box 그리기
     for i, obj in enumerate(results.xyxy[0]):
         # 인식결과를 표시하기 위한 좌표를 얻음
         x1, y1, x2, y2, _, cls = map(int, obj)
         conf = obj[4]
 
         # TODO: 인식된 정확도(confidence)와 클래스를 label로 구성
-        label = f"{results.names[cls]}: {conf:.2f}"
+        
+        label = f"conf:{conf:.2f} class:{results.names[cls]}"
+
+        # # TODO: 출력 바운딩박스 크기 조절
+        y2 += (input_h - frame_h)//2
+        y1 -= (input_h - frame_h)//2
 
         # OpenCV를 이용해서 해당 좌표에 사각형과 text를 출력
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -43,11 +62,11 @@ while True:
         print(f"Object {i}: {label} at [{x1}, {y1}, {x2}, {y2}]")
 
     # 화면 표시
-    cv2.imshow("YOLOv5-RPS", frame)
+    cv2.imshow("YOLOv5", frame)
 
     # 종료를 위한 key 처리
     key = cv2.waitKey(20) & 0xFF
-    if key == ord('q'):
+    if key == 27:
         break
 
 cap.release()

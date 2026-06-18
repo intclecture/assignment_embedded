@@ -23,11 +23,11 @@ while True:
         x1, y1, x2, y2, _, cls = map(int, obj[:6])
         conf = obj[4]
         label_str = f"{model.names[cls]} : {conf:.2f}"
-        # print(f"SKY: {x1}, {y1}, {x2}, {y2}, {conf}, {model.names[cls]}")
+        print(f"{i}: {x1}, {y1}, {x2}, {y2}, {conf}, {model.names[cls]}")
 
-    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    cv2.putText(frame, label_str, (x1, y1),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(frame, label_str, (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2)
 
     cv2.imshow("detected", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
